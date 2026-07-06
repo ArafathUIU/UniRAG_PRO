@@ -1,0 +1,24 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+
+# Database / Local runtime
+*.sqlite3
+chroma_store/
+chroma_store_corrupt_bak_*/
+celerybeat-schedule*
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+.DS_Store
