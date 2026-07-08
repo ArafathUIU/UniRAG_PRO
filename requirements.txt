@@ -1,0 +1,17 @@
+django>=5.0
+djangorestframework>=3.15
+chromadb>=0.5
+langchain>=0.2
+langchain-text-splitters>=0.2
+langchain-groq>=0.2
+sentence-transformers>=3.0
+langgraph>=0.1
+celery>=5.4
+redis>=5.0
+beautifulsoup4>=4.12
+requests>=2.32
+pymupdf>=1.24
+python-dotenv>=1.0
+drf-spectacular>=0.27
+python-docx>=1.1
+Pillow>=10.0
