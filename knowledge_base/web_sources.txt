@@ -1,0 +1,129 @@
+# Web pages to scrape into the knowledge base.
+#
+# - One URL per line.
+# - Lines starting with # are ignored (comments).
+# - Add or remove URLs any time — no code changes or rebuild needed.
+#   The next ingestion run (the daily 3 AM schedule, or a manual run) picks
+#   up whatever is in this file at that moment.
+# - Only static/server-rendered pages work with the current scraper. If a
+#   page's content is loaded via JavaScript and shows up empty here, flag
+#   it — the project has playwright available to add JS-rendering support
+#   for specific pages if needed.
+
+# --- North South University ---
+https://www.northsouth.edu
+https://www.northsouth.edu/admission/
+https://www.northsouth.edu/academics/
+https://www.northsouth.edu/fees-financial-aid/
+https://www.northsouth.edu/scholarships/
+www.ustc.edu.bd
+www.iub.edu.bd
+www.cwu.edu.bd
+www.iubat.edu
+www.iiuc.ac.bd
+www.aust.edu
+www.aiub.ac.bd
+www.ewubd.edu
+www.uap-bd.edu
+www.gonouniversity.edu.bd
+www.pub.ac.bd
+www.aub.ac.bd
+# --- Daffodil International University (DIU) ---
+https://www.daffodilvarsity.edu.bd
+https://www.daffodilvarsity.edu.bd/scholarship
+https://www.daffodilvarsity.edu.bd/admission
+https://www.daffodilvarsity.edu.bd/tuition-fee
+https://www.daffodilvarsity.edu.bd/program
+https://www.daffodilvarsity.edu.bd/about
+www.manarat.ac.bd
+www.bracu.ac.bd
+www.bu.edu.bd
+www.lus.ac.bd
+www.bgctub.ac.bd
+www.siu.edu.bd
+www.uoda.edu.bd
+www.puc.ac.bd
+www.seu.edu.bd
+# daffodilvarsity.edu.bd is already listed above with specific sub-pages
+www.stamforduniversity.edu.bd
+https://www.sub.ac.bd
+www.cityuniversity.ac.bd
+www.primeuniversity.edu.bd
+www.nub.ac.bd
+www.southern.edu.bd
+www.green.edu.bd
+www.pundrauniversity.ac.bd
+www.wub.edu.bd
+www.smuct.ac.bd
+www.themillenniumuniversity.edu.bd
+www.easternuni.edu.bd
+www.metrouni.edu.bd
+www.uttarauniversity.edu.bd
+www.uiu.ac.bd
+www.southasiauni.ac.bd
+www.vub.edu.bd
+www.bubt.edu.bd
+www.presidency.edu.bd, www.pu.edu.bd
+www.uits.edu.bd
+www.primeasia.edu.bd
+www.royal.edu.bd
+www.ulab.edu.bd
+www.adust.edu.bd
+www.biu.ac.bd
+www.asaub.edu.bd
+www.eastdelta.edu.bd
+www.vu.edu.bd
+www.hamdarduniversity.edu.bd
+www.buft.edu.bd
+www.neub.edu.bd
+www.fcub.edu.bd
+www.ishakha.edu.bd
+www. zhsust.edu.bd
+www.ebaub.edu.bd
+www.nwu.ac.bd
+www.kyau.edu.bd
+www.su.edu.bd
+www.feniuniversity.ac.bd
+www.britannia.edu.bd
+www.portcity.edu.bd
+www.buhs.ac.bd
+www.ciu.edu.bd
+www.ndub.edu.bd
+http://www.timesuniversitybd.com
+www.nbiu.edu.bd
+www.fiu.edu.bd
+www.rstu.edu.bd
+www.sfmu.ac.bd
+www.cbiu.ac.bd
+www.rpsu.edu.bd
+www.gub.edu.bd
+www.globaluniversity.edu.bd
+www.ccnust.ac.bd
+www.baust.edu.bd
+www.bauet.ac.bd
+www.baiust.ac.bd
+www.ius.edu.bd
+www.cub.edu.bd
+www.npiub.edu.bd
+www.nubtkhulna.ac.bd
+www.uctc.edu.bd
+www.cust.edu.bd
+www.tuca.edu.bd
+www.ugv.edu.bd
+www.akmu.edu.bd
+www.zums.edu.bd
+www.amust.ac.bd
+www.kkbau.ac.bd
+www.bubban.ac.bd
+www.trustuniversity.edu.bd
+www.isu.ac.bd
+www.uob.edu.bd
+www.uset.ac.bd
+www.rtm-aktu.edu.bd
+www.must.ac.bd
+www.cbuft.edu.bd
+www.baustkhulna.ac.bd
+www.teestauniversity.ac.bd
+www.iiustb.ac.bd
+https://lusa.ac.bd
+
