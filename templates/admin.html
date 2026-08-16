@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniRAG — Knowledge Base Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1B2B26; --bottle-deep: #16281F; --ivory: #F1EAD9; --card: #FBF7EE;
+    --brass: #B08D57; --oxblood: #8C3F2C; --oxblood-bright: #B0523A;
+    --line: rgba(176, 141, 87, 0.35); --green: #3f7d5a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 32px 16px 64px;
+    background: radial-gradient(ellipse at top left, #24443C 0%, var(--bottle-deep) 55%);
+    font-family: "IBM Plex Sans", sans-serif; color: var(--ivory);
+    display: flex; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 1000px; }
+  header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 22px;
+  }
+  h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: 2rem; margin: 0; }
+  header p { margin: 4px 0 0; opacity: 0.75; font-style: italic; font-size: 0.9rem; }
+  header a { color: var(--brass); font-size: 0.85rem; text-decoration: none; }
+  header a:hover { text-decoration: underline; }
+
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 720px) { .panels { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(251,247,238,0.04), rgba(251,247,238,0.01));
+    border: 1px solid var(--line); border-radius: 12px; padding: 18px;
+  }
+  .panel h2 { font-family: "Fraunces", serif; font-size: 1.1rem; margin: 0 0 12px; font-weight: 600; }
+  label { display: block; font-size: 0.8rem; opacity: 0.8; margin: 10px 0 4px; }
+  input[type="text"], textarea, input[type="file"] {
+    width: 100%; background: rgba(251,247,238,0.06); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 12px; color: var(--ivory);
+    font-family: "IBM Plex Sans", sans-serif; font-size: 0.9rem; outline: none;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  input:focus, textarea:focus { border-color: var(--brass); }
+  .btn {
+    margin-top: 12px; background: var(--brass); color: var(--bottle-deep); border: none;
+    border-radius: 8px; padding: 10px 18px; font-weight: 600; font-size: 0.9rem; cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .docs-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .docs-head h2 { font-family: "Fraunces", serif; font-size: 1.2rem; margin: 0; }
+  .refresh { background: none; border: 1px solid var(--line); color: var(--ivory); border-radius: 6px;
+    padding: 6px 12px; cursor: pointer; font-size: 0.8rem; opacity: 0.85; }
+  .refresh:hover { border-color: var(--brass); opacity: 1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid rgba(176,141,87,0.18); }
+  th { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.05em; opacity: 0.7; }
+  td .title { font-weight: 500; }
+  td .ref { display: block; font-size: 0.72rem; opacity: 0.5; word-break: break-all; }
+  .type-badge { font-family: "IBM Plex Mono", monospace; font-size: 0.68rem; text-transform: uppercase;
+    background: rgba(63,125,90,0.3); border: 1px solid var(--green); border-radius: 4px; padding: 2px 6px; }
+  .del-btn { background: none; border: 1px solid var(--oxblood-bright); color: var(--oxblood-bright);
+    border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 0.78rem; }
+  .del-btn:hover { background: var(--oxblood-bright); color: var(--ivory); }
+  .del-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--card); color: var(--ink); padding: 12px 20px; border-radius: 8px;
+    border-left: 4px solid var(--green); box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    font-size: 0.88rem; opacity: 0; transition: opacity 0.25s; pointer-events: none; max-width: 90%;
+  }
+  #toast.show { opacity: 1; }
+  #toast.error { border-left-color: var(--oxblood-bright); }
+  .empty { opacity: 0.55; font-style: italic; padding: 16px 4px; }
+
+  #login-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: radial-gradient(ellipse at top left, #24443C 0%, var(--bottle-deep) 60%);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #login-overlay.hidden { display: none; }
+  .login-card {
+    background: linear-gradient(180deg, rgba(251,247,238,0.05), rgba(251,247,238,0.01));
+    border: 1px solid var(--line); border-radius: 14px; padding: 30px 28px;
+    width: 100%; max-width: 380px; text-align: center;
+  }
+  .login-card h2 { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.4rem; margin: 0 0 6px; }
+  .login-card p { opacity: 0.7; font-size: 0.85rem; margin: 0 0 18px; }
+  .login-card input {
+    width: 100%; background: rgba(251,247,238,0.06); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 14px; color: var(--ivory); font-size: 0.95rem;
+    outline: none; text-align: center;
+  }
+  .login-card input:focus { border-color: var(--brass); }
+  .login-card .btn { width: 100%; margin-top: 14px; padding: 12px; }
+  .login-err { color: var(--oxblood-bright); font-size: 0.82rem; min-height: 1.1em; margin-top: 10px; }
+  .logout-link { cursor: pointer; }
+</style>
+</head>
+<body>
+  <div id="login-overlay">
+    <div class="login-card">
+      <h2>🔒 Admin Access</h2>
+      <p>Enter the admin password to manage the knowledge base.</p>
+      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+      <button class="btn" id="login-btn">Enter</button>
+      <div class="login-err" id="login-err"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Knowledge Base Admin</h1>
+        <p>Upload, add, and remove documents — indexed into the vector store instantly.</p>
+      </div>
+      <div style="text-align:right">
+        <a href="/">← Back to chat</a><br>
+        <a class="logout-link" id="logout-link">Log out 🔓</a>
+      </div>
+    </header>
+
+    <div class="panels">
+      <div class="panel">
+        <h2>📤 Upload a document</h2>
+        <label>File (PDF, DOC/DOCX, image, TXT/CSV/MD, …)</label>
+        <input type="file" id="file-input">
+        <button class="btn" id="upload-btn">Upload &amp; index</button>
+      </div>
+
+      <div class="panel">
+        <h2>✍️ Add text</h2>
+        <label>Title</label>
+        <input type="text" id="text-title" placeholder="e.g. XYZ University fees 2026">
+        <label>Content</label>
+        <textarea id="text-body" placeholder="Paste the knowledge base text here..."></textarea>
+        <button class="btn" id="addtext-btn">Add &amp; index</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="docs-head">
+        <h2>Indexed documents (<span id="doc-count">0</span>)</h2>
+        <button class="refresh" id="refresh-btn">↻ Refresh</button>
+      </div>
+      <div id="docs-container"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+const API = "/admin/documents/";
+const fileInput = document.getElementById("file-input");
+const uploadBtn = document.getElementById("upload-btn");
+const addtextBtn = document.getElementById("addtext-btn");
+const refreshBtn = document.getElementById("refresh-btn");
+const textTitle = document.getElementById("text-title");
+const textBody = document.getElementById("text-body");
+const docsContainer = document.getElementById("docs-container");
+const docCount = document.getElementById("doc-count");
+const toast = document.getElementById("toast");
+const loginOverlay = document.getElementById("login-overlay");
+const loginPassword = document.getElementById("login-password");
+const loginBtn = document.getElementById("login-btn");
+const loginErr = document.getElementById("login-err");
+const logoutLink = document.getElementById("logout-link");
+
+// --- Auth ---
+let adminToken = sessionStorage.getItem("admin_token") || "";
+
+function authHeaders() {
+  return adminToken ? { "X-Admin-Password": adminToken } : {};
+}
+
+function showLogin() {
+  loginOverlay.classList.remove("hidden");
+  loginPassword.value = "";
+  loginPassword.focus();
+}
+
+function hideLogin() {
+  loginOverlay.classList.add("hidden");
+}
+
+async function tryLogin(pwd) {
+  loginErr.textContent = "";
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Checking…";
+  try {
+    const res = await fetch(API, { headers: { "X-Admin-Password": pwd } });
+    if (res.status === 401) {
+      loginErr.textContent = "Incorrect password.";
+      return;
+    }
+    if (!res.ok) throw new Error("Server error " + res.status);
+    adminToken = pwd;
+    sessionStorage.setItem("admin_token", pwd);
+    hideLogin();
+    loadDocs();
+  } catch (err) {
+    loginErr.textContent = "Login failed: " + err.message;
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Enter";
+  }
+}
+
+function logout() {
+  adminToken = "";
+  sessionStorage.removeItem("admin_token");
+  showLogin();
+}
+
+// If any request comes back 401, force re-login.
+function handleUnauthorized() {
+  showToast("Session expired — please log in again.", true);
+  logout();
+}
+
+loginBtn.addEventListener("click", () => tryLogin(loginPassword.value));
+loginPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") tryLogin(loginPassword.value); });
+logoutLink.addEventListener("click", logout);
+
+let toastTimer = null;
+function showToast(msg, isError) {
+  toast.textContent = msg;
+  toast.className = "show" + (isError ? " error" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.className = ""; }, 3500);
+}
+
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+async function loadDocs() {
+  docsContainer.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const res = await fetch(API, { headers: authHeaders() });
+    if (res.status === 401) { handleUnauthorized(); return; }
+    const data = await res.json();
+    const docs = data.documents || [];
+    docCount.textContent = data.count != null ? data.count : docs.length;
+    if (docs.length === 0) {
+      docsContainer.innerHTML = '<div class="empty">No documents indexed yet.</div>';
+      return;
+    }
+    const rows = docs.map(d => `
+      <tr>
+        <td>
+          <span class="title">${escapeHtml(d.title || "(untitled)")}</span>
+          <span class="ref">${escapeHtml(d.source_ref)}</span>
+        </td>
+        <td><span class="type-badge">${escapeHtml(d.source_type || "?")}</span></td>
+        <td>${d.chunk_count}</td>
+        <td>${fmtDate(d.updated_at)}</td>
+        <td><button class="del-btn" data-ref="${escapeAttr(d.source_ref)}">Delete</button></td>
+      </tr>`).join("");
+    docsContainer.innerHTML = `
+      <table>
+        <thead><tr><th>Document</th><th>Type</th><th>Chunks</th><th>Updated</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    docsContainer.querySelectorAll(".del-btn").forEach(btn => {
+      btn.addEventListener("click", () => deleteDoc(btn.dataset.ref, btn));
+    });
+  } catch (err) {
+    docsContainer.innerHTML = '<div class="empty">Failed to load documents.</div>';
+    showToast("Failed to load documents: " + err.message, true);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
+
+async function uploadFile() {
+  if (!fileInput.files.length) { showToast("Choose a file first.", true); return; }
+  const fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = "Indexing…";
+  try {
+    const res = await fetch(API, { method: "POST", body: fd, headers: authHeaders() });
+    if (res.status === 401) { handleUnauthorized(); return; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
+    showToast(`Indexed "${data.title}" (${data.chunk_count} chunks).`);
+    fileInput.value = "";
+    loadDocs();
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = "Upload & index";
+  }
+}
+
+async function addText() {
+  const text = textBody.value.trim();
+  if (!text) { showToast("Enter some text.", true); return; }
+  addtextBtn.disabled = true;
+  addtextBtn.textContent = "Indexing…";
+  try {
+    const fd = new FormData();
+    fd.append("title", textTitle.value.trim());
+    fd.append("text", text);
+    const res = await fetch(API, { method: "POST", body: fd, headers: authHeaders() });
+    if (res.status === 401) { handleUnauthorized(); return; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to add");
+    showToast(`Added "${data.title}" (${data.chunk_count} chunks).`);
+    textTitle.value = ""; textBody.value = "";
+    loadDocs();
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    addtextBtn.disabled = false;
+    addtextBtn.textContent = "Add & index";
+  }
+}
+
+async function deleteDoc(sourceRef, btn) {
+  if (!confirm("Delete this document from the knowledge base?\n\n" + sourceRef)) return;
+  btn.disabled = true;
+  btn.textContent = "Deleting…";
+  try {
+    const res = await fetch(API + "?source_ref=" + encodeURIComponent(sourceRef), { method: "DELETE", headers: authHeaders() });
+    if (res.status === 401) { handleUnauthorized(); return; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Delete failed");
+    showToast("Deleted." + (data.removed_file ? " File removed." : ""));
+    loadDocs();
+  } catch (err) {
+    showToast(err.message, true);
+    btn.disabled = false;
+    btn.textContent = "Delete";
+  }
+}
+
+uploadBtn.addEventListener("click", uploadFile);
+addtextBtn.addEventListener("click", addText);
+refreshBtn.addEventListener("click", loadDocs);
+
+// Gate on load: if we have a stored token, verify by loading; otherwise prompt.
+if (adminToken) {
+  hideLogin();
+  loadDocs();
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>
