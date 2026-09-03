@@ -140,6 +140,21 @@ python manage.py test tests
 
 ---
 
+## 🌐 Production Deployment (Render / Vercel / Netlify)
+
+For a detailed deployment breakdown comparing Render, Vercel, and Netlify, see **[`DEPLOYMENT.md`](./DEPLOYMENT.md)**.
+
+### 🏆 Recommended: Render (1-Click Blueprint)
+
+**Render** is the **best choice** for UniRAG PRO because it natively supports persistent Python WSGI/ASGI servers, background Celery workers, and persistent disk storage for local ChromaDB indices.
+
+1. Fork or push your code to **GitHub**.
+2. Log into **[Render Dashboard](https://dashboard.render.com/)** ➔ **New +** ➔ **Blueprint**.
+3. Select **`UniRAG_PRO`**. Render will automatically detect `render.yaml` and configure the web service.
+4. Set environment secrets (`GEMINI_API_KEY`, `GROQ_API_KEY`) and click **Apply**.
+
+---
+
 ## 📜 License & Credits
 
-Built with ❤️ by **[ArafathUIU](https://github.com/ArafathUIU)** for Bangladeshi higher education search & knowledge discovery.
+Built by **[ArafathUIU](https://github.com/ArafathUIU)** for Bangladeshi higher education search & knowledge discovery.
