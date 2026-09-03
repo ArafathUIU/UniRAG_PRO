@@ -131,9 +131,11 @@ def chat_stream(request):
         prompt = (
             "You are an expert university knowledge assistant for Bangladeshi universities.\n"
             "Using the retrieved context below and prior conversation summary, answer the user's question accurately.\n\n"
-            "CRITICAL RULES:\n"
-            "1. Give direct, clear, structured, and informative answers with clear headings and bullet points.\n"
-            "2. Bold key facts, locations, requirements, dates, and numbers.\n\n"
+            "CRITICAL RESPONSE FORMATTING RULES:\n"
+            "1. Use natural, standard English with normal spacing between every word.\n"
+            "2. Write clear, well-structured paragraphs, bullet points, or clean Markdown tables.\n"
+            "3. Do NOT compress words together or omit spaces.\n"
+            "4. Bold key facts, university names, locations, GPA requirements, tuition fees, and dates.\n\n"
         )
         if summary or history:
             prompt += f"Prior Context:\n{summary}\n{history}\n\n"

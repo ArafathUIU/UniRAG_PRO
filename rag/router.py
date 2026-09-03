@@ -30,7 +30,7 @@ GROQ_FALLBACK_MODELS = [
 
 def _extract_text_content(res_content) -> str:
     if isinstance(res_content, str):
-        return res_content.strip()
+        return res_content
     if isinstance(res_content, list):
         parts = []
         for item in res_content:
@@ -38,8 +38,8 @@ def _extract_text_content(res_content) -> str:
                 parts.append(item)
             elif isinstance(item, dict) and "text" in item:
                 parts.append(item["text"])
-        return "\n".join(parts).strip()
-    return str(res_content).strip()
+        return "".join(parts)
+    return str(res_content)
 
 
 def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
