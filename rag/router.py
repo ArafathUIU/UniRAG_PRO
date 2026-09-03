@@ -85,6 +85,13 @@ def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
                 logger.warning(f"Groq invocation failed for model '{model}': {e}. Trying next fallback...")
                 last_error = e
 
+    if last_error and "RESOURCE_EXHAUSTED" in str(last_error):
+        return (
+            "⚠️ **Google Gemini API daily free quota limit reached (20 requests/day).**\n\n"
+            "Google resets free tier API quotas daily. To continue asking questions right now, "
+            "you can add a free `GROQ_API_KEY` to your `.env` file or try again tomorrow."
+        )
+
     raise RuntimeError(f"All LLM invocations failed. Last error: {last_error}")
 
 
