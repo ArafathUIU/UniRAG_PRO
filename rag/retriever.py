@@ -33,6 +33,7 @@ def generate_query_variations(
     Generates alternative queries/perspectives based on the user's input query and past context.
     Falls back gracefully to returning just [query] if LLM is unavailable or fails.
     """
+    queries = [query]
     # Optimization: Bypass extra LLM expansion call for standalone direct queries without prior conversation context
     if not conversation_summary and not chat_history:
         words = query.lower().split()
