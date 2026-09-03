@@ -34,7 +34,7 @@ def generate_query_variations(
     Falls back gracefully to returning just [query] if LLM is unavailable or fails.
     """
     queries = [query]
-    api_key = getattr(settings, "GROQ_API_KEY", None)
+    api_key = getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GROQ_API_KEY", None)
     if not api_key:
         return queries
 
@@ -47,7 +47,7 @@ def generate_query_variations(
     prompt = (
         f"You are an AI assistant helping with information retrieval for Bangladeshi universities.\n"
         f"Generate {num_variations} different search queries/perspectives based on the user's latest query and the prior conversation context.\n"
-        f"The goal is to resolve pronouns/abbreviations and expand short or follow-up questions (e.g., 'What about fees?' -> 'What are the tuition fees for North South University CSE?').\n"
+        f"The goal is to resolve pronouns/abbreviations, expand acronyms (e.g. BUET -> Bangladesh University of Engineering and Technology), and expand short or follow-up questions.\n"
         f"Rules:\n"
         f"- Output exactly {num_variations} standalone search queries, one per line.\n"
         f"- Do NOT number the lines or add bullet points.\n"
@@ -75,7 +75,7 @@ def generate_query_variations(
 def retrieve_context(
     query: str,
     top_k: int = 8,
-    min_similarity: float = 0.3,
+    min_similarity: float = 0.15,
     conversation_summary: str = "",
     chat_history: str = "",
 ) -> str:
