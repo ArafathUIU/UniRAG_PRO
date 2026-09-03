@@ -312,12 +312,38 @@ def handle_knowledge(state: ChatState) -> ChatState:
             )
             if context:
                 prompt = (
-                    "You are a helpful university knowledge assistant for Bangladeshi universities.\n"
-                    f"The user attached an image/file named '{file_name}' and asked: '{state['query']}'.\n\n"
-                    "Using the retrieved knowledge base context below, provide a complete, clear, and informative answer about the topic.\n\n"
-                    f"Context:\n{context}\n\n"
-                    "Answer:"
-                )
+        "You are a knowledgeable and strictly factual university assistant for Bangladeshi universities.
+"
+        "Using the retrieved context below and prior conversation summary, answer the user's question accurately.
+
+"
+        "CRITICAL GROUNDING AND ANTI-HALLUCINATION RULES:
+"
+        "1. STRICT FACTUAL GROUNDING: Answer ONLY using the explicit facts directly stated in the Context below.
+"
+        "2. ZERO HALLUCINATION: DO NOT GUESS, INVENT, OR FABRICATE any tuition fee amounts, semester costs, campus addresses, road names, acreages, or founding dates. If a specific number, fee, or location is NOT explicitly written in the Context, DO NOT make up a table or number.
+"
+        "3. MISSING INFORMATION: If the Context does not contain the answer for the specific university asked about, state honestly: 'The provided knowledge base does not contain the specific [tuition fee / campus location] for [University Name]. Please consult their official website or admissions office.'
+"
+        "4. NEVER MIX UNIVERSITIES: Do not apply details, locations, or fees from one university to another.
+"
+        "5. CONCISE SPECIFIC ANSWERS: For specific questions (e.g. 'Where is UIU?', 'What is the fee?'), provide a direct, concise factual answer answering only what was asked without generating unnecessary speculative tables.
+"
+        "6. Support common university abbreviations (e.g. UIU, BRAC, BRACU, NSU, BUET, DIU).
+"
+        "7. Bold key verified facts, addresses, and official figures.
+
+"
+        f"{history_prompt}"
+        f"Context:
+{context}
+
+"
+        f"User Question: {state['query']}
+
+"
+        "Answer:"
+    )
                 state["answer"] = invoke_llm_with_fallback(prompt, temperature=0.3)
                 state["intent"] = "KNOWLEDGE"
                 add_turn(session_id, state["query"], state["answer"])
@@ -344,21 +370,36 @@ def handle_knowledge(state: ChatState) -> ChatState:
         history_prompt += f"Recent Chat History:\n{history}\n\n"
 
     prompt = (
-        "You are a helpful university knowledge assistant for Bangladeshi universities.\n"
-        "Using the retrieved context below and prior conversation summary, answer the user's question accurately.\n\n"
-        "CRITICAL RULES:\n"
-        "1. MATCH ANSWER SCOPE TO QUERY TYPE:\n"
-        "   - FOR SPECIFIC / DIRECT QUESTIONS (e.g. 'where is BRAC University located?', 'what is the contact number?', 'what is the minimum GPA?'):\n"
-        "     Give a direct, concise, to-the-point answer answering EXACTLY what was asked. Do NOT generate unnecessary extra sections.\n"
-        "   - FOR BROAD / OVERVIEW QUESTIONS (e.g. 'Tell me about BUET', 'Overview of NSU', 'Details on DIU admission'):\n"
-        "     Structure comprehensively with clear headings (Overview, Campus & Enrollment, Academics, Admission, Fees).\n"
-        "2. ALWAYS use the retrieved context to answer — never say 'I don't have information' if the context is relevant.\n"
-        "3. Support common university abbreviations (e.g. DIU, NSU, BUET, BRACU, UIU, SUST, BUP, etc.).\n"
-        "4. Bold key facts, locations, requirements, dates, and figures.\n"
-        "5. ONLY say you don't have information if the context contains nothing relevant.\n\n"
+        "You are a knowledgeable and strictly factual university assistant for Bangladeshi universities.
+"
+        "Using the retrieved context below and prior conversation summary, answer the user's question accurately.
+
+"
+        "CRITICAL GROUNDING AND ANTI-HALLUCINATION RULES:
+"
+        "1. STRICT FACTUAL GROUNDING: Answer ONLY using the explicit facts directly stated in the Context below.
+"
+        "2. ZERO HALLUCINATION: DO NOT GUESS, INVENT, OR FABRICATE any tuition fee amounts, semester costs, campus addresses, road names, acreages, or founding dates. If a specific number, fee, or location is NOT explicitly written in the Context, DO NOT make up a table or number.
+"
+        "3. MISSING INFORMATION: If the Context does not contain the answer for the specific university asked about, state honestly: 'The provided knowledge base does not contain the specific [tuition fee / campus location] for [University Name]. Please consult their official website or admissions office.'
+"
+        "4. NEVER MIX UNIVERSITIES: Do not apply details, locations, or fees from one university to another.
+"
+        "5. CONCISE SPECIFIC ANSWERS: For specific questions (e.g. 'Where is UIU?', 'What is the fee?'), provide a direct, concise factual answer answering only what was asked without generating unnecessary speculative tables.
+"
+        "6. Support common university abbreviations (e.g. UIU, BRAC, BRACU, NSU, BUET, DIU).
+"
+        "7. Bold key verified facts, addresses, and official figures.
+
+"
         f"{history_prompt}"
-        f"Context:\n{context}\n\n"
-        f"User Question: {state['query']}\n\n"
+        f"Context:
+{context}
+
+"
+        f"User Question: {state['query']}
+
+"
         "Answer:"
     )
     state["answer"] = invoke_llm_with_fallback(prompt, temperature=0.3)

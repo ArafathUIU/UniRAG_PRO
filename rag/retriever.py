@@ -76,8 +76,8 @@ def generate_query_variations(
 
 def retrieve_context(
     query: str,
-    top_k: int = 8,
-    min_similarity: float = 0.15,
+    top_k: int = 10,
+    min_similarity: float = 0.25,
     conversation_summary: str = "",
     chat_history: str = "",
 ) -> str:
