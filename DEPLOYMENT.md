@@ -43,8 +43,21 @@ Render will automatically detect `render.yaml`. Enter your environment secrets:
 Click **Apply**. Render will automatically:
 1. Build the Python 3.12 environment
 2. Install dependencies from `requirements.txt`
-3. Execute `python manage.py migrate`
-4. Start the `gunicorn` web server on a public SSL URL (e.g. `https://unirag-pro.onrender.com`).
+3. Collect static assets and apply database migrations
+4. Start the Gunicorn web server on `$PORT` on a public SSL URL (e.g. `https://unirag-pro.onrender.com`).
+
+---
+
+### 🔧 Manual Web Service Settings (If not using Blueprint)
+If creating a Render **Web Service** manually:
+- **Environment**: `Python 3`
+- **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
+- **Start Command**: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120`
+
+> ⚠️ **Troubleshooting Status 137 (Out-Of-Memory Error)**:
+> Render Free Tier provides 512MB RAM.
+> 1. Do **NOT** use `python manage.py runserver` on Render (it runs StatReloader, spawning duplicate processes that exceed 512MB RAM).
+> 2. Always use **`gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120`**. This limits Gunicorn memory footprint below 350MB RAM while binding properly to Render's dynamic `$PORT`.
 
 ---
 
