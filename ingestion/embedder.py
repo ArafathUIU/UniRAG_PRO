@@ -16,9 +16,12 @@ upgrading an existing database that was on the old 768-dim Gemini vectors).
 The chat LLM (rag/router.py, ChatGroq) is unaffected by this change and
 still uses GROQ_API_KEY — only embeddings run locally.
 """
+import os
 import threading
 
-from sentence_transformers import SentenceTransformer
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_DIM = 384
@@ -32,6 +35,7 @@ def _get_model():
     if _model is None:
         with _model_lock:
             if _model is None:
+                from sentence_transformers import SentenceTransformer
                 _model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return _model
 

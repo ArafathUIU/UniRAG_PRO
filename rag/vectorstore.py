@@ -17,7 +17,6 @@ import threading
 import time
 from datetime import datetime, timezone
 
-import chromadb
 from django.conf import settings
 
 COLLECTION_NAME = "knowledge_chunks"
@@ -32,6 +31,7 @@ def _get_collection():
     if _collection is None:
         with _lock:
             if _collection is None:
+                import chromadb
                 _client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR)
                 _collection = _client.get_or_create_collection(
                     name=COLLECTION_NAME,
