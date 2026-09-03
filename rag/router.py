@@ -28,6 +28,20 @@ GROQ_FALLBACK_MODELS = [
 ]
 
 
+def _extract_text_content(res_content) -> str:
+    if isinstance(res_content, str):
+        return res_content.strip()
+    if isinstance(res_content, list):
+        parts = []
+        for item in res_content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and "text" in item:
+                parts.append(item["text"])
+        return "\n".join(parts).strip()
+    return str(res_content).strip()
+
+
 def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
     """
     Invokes Google Gemini LLM (or Groq fallback) with fallback models if primary hits rate limits or errors.
@@ -51,7 +65,7 @@ def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
             try:
                 llm = ChatGoogleGenerativeAI(model=model, google_api_key=gemini_key, temperature=temperature)
                 res = llm.invoke(prompt)
-                return str(res.content)
+                return _extract_text_content(res.content)
             except Exception as e:
                 logger.warning(f"Gemini invocation failed for model '{model}': {e}. Trying next fallback...")
                 last_error = e
@@ -66,7 +80,7 @@ def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
             try:
                 llm = ChatGroq(model=model, api_key=groq_key, temperature=temperature)
                 res = llm.invoke(prompt)
-                return str(res.content)
+                return _extract_text_content(res.content)
             except Exception as e:
                 logger.warning(f"Groq invocation failed for model '{model}': {e}. Trying next fallback...")
                 last_error = e

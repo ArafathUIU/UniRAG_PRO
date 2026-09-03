@@ -210,7 +210,7 @@ def _extract_from_image(file_bytes: bytes, ext: str, file_name: str = "image.jpg
     if gemini_key:
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
-            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=gemini_key, temperature=0.1)
+            llm = ChatGoogleGenerativeAI(model=getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash"), google_api_key=gemini_key, temperature=0.1)
             message = HumanMessage(
                 content=[
                     {"type": "text", "text": vision_prompt},
@@ -218,7 +218,8 @@ def _extract_from_image(file_bytes: bytes, ext: str, file_name: str = "image.jpg
                 ]
             )
             res = llm.invoke([message])
-            content = str(res.content).strip()
+            from rag.router import _extract_text_content
+            content = _extract_text_content(res.content)
             if len(content) > 10:
                 logger.info(f"Successfully analyzed image '{file_name}' with Gemini Vision.")
                 return content
