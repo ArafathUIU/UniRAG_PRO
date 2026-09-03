@@ -8,7 +8,8 @@ __pycache__/
 
 # Database / Local runtime
 *.sqlite3
-chroma_store/
+memory_store/
+staticfiles/
 chroma_store_corrupt_bak_*/
 celerybeat-schedule*
 

@@ -121,26 +121,36 @@ def chat_stream(request):
 
         context = ""
         if not file_text:
-            context = retrieve_context(query=query, conversation_summary=summary, chat_history=history)
-            if not context:
-                ans = "No information was found."
-                add_turn(session_id, query, ans)
-                yield f"data: {json.dumps({'content': ans, 'intent': 'KNOWLEDGE', 'done': True})}\n\n"
-                return
+            try:
+                context = retrieve_context(query=query, conversation_summary=summary, chat_history=history)
+            except Exception as e:
+                logger.warning(f"Context retrieval error: {e}")
+                context = ""
 
-        prompt = (
-            "You are an expert university knowledge assistant for Bangladeshi universities.\n"
-            "Using the retrieved context below and prior conversation summary, answer the user's question accurately.\n\n"
-            "CRITICAL RESPONSE FORMATTING RULES:\n"
-            "1. Use natural, standard English with normal spacing between every word.\n"
-            "2. Write clear, well-structured paragraphs, bullet points, or clean Markdown tables.\n"
-            "3. Do NOT compress words together or omit spaces.\n"
-            "4. Bold key facts, university names, locations, GPA requirements, tuition fees, and dates.\n\n"
-        )
-        if summary or history:
-            prompt += f"Prior Context:\n{summary}\n{history}\n\n"
         if context:
+            prompt = (
+                "You are an expert university knowledge assistant for Bangladeshi universities.\n"
+                "Using the retrieved context below and prior conversation summary, answer the user's question accurately.\n\n"
+                "CRITICAL RESPONSE FORMATTING RULES:\n"
+                "1. Use natural, standard English with normal spacing between every word.\n"
+                "2. Write clear, well-structured paragraphs, bullet points, or clean Markdown tables.\n"
+                "3. Do NOT compress words together or omit spaces.\n"
+                "4. Bold key facts, university names, locations, GPA requirements, tuition fees, and dates.\n\n"
+            )
+            if summary or history:
+                prompt += f"Prior Context:\n{summary}\n{history}\n\n"
             prompt += f"Context:\n{context}\n\n"
+        else:
+            prompt = (
+                "You are an expert university knowledge assistant for Bangladeshi universities.\n"
+                "Answer the user's question accurately, directly, and helpfully regarding Bangladeshi higher education.\n\n"
+                "CRITICAL RESPONSE FORMATTING RULES:\n"
+                "1. Use natural, standard English with normal spacing between every word.\n"
+                "2. Write clear, well-structured paragraphs, bullet points, or clean Markdown tables.\n"
+                "3. Bold key facts, university names, locations, GPA requirements, tuition fees, and dates.\n\n"
+            )
+            if summary or history:
+                prompt += f"Prior Context:\n{summary}\n{history}\n\n"
         if file_text:
             prompt += f"Attached File Content ({file_name}):\n{file_text[:8000]}\n\n"
         prompt += f"User Question: {query}\n\nAnswer:"
