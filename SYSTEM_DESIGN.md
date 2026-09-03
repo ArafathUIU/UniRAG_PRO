@@ -98,14 +98,29 @@ flowchart TD
 
 ---
 
-## 4. Ingestion & Data Pipeline
+## 4. In-Depth Pipeline Architecture
 
-```
-[University Source Files] -> [File Loader (PDF/Web)] -> [Recursive Character Text Splitter (Chunk Size: 600, Overlap: 100)] -> [Embeddings Engine] -> [ChromaDB & BM25 Persistence]
-```
+### 4.1. Scraping & Ingestion Pipeline
+- **Web Crawler (`knowledge_base/web_sources.txt`)**: Automatically fetches raw HTML pages from university websites using `requests` and `BeautifulSoup`, stripping scripts, navigation headers, and footers to extract clean academic text.
+- **PDF Extraction (`knowledge_base/pdfs/`)**: Uses `PyPDF2` / `pdfplumber` to extract text from official university prospectuses, fee circulars, and admission policy documents.
+- **Recursive Character Chunking**: Employs `RecursiveCharacterTextSplitter` configured with `chunk_size = 600` characters and `chunk_overlap = 100` characters. This preserves sentence boundaries and semantic continuity across adjacent chunks.
+- **Dense Embedding Generation**: Computes 384-dimensional vector embeddings locally using `BAAI/bge-small-en-v1.5` via `HuggingFaceBgeEmbeddings` and persists vector indices into local ChromaDB (`chroma_store/`).
 
-- **Indexed Data Volume**: 2,964 chunks across 205 University sources.
-- **Multimodal OCR**: Images attached in chat are processed on-the-fly using `gemini-3.6-flash` vision / Groq vision.
+### 4.2. Celery Asynchronous Workers & Scheduled Refresh
+- **Task Broker & Worker**: Uses **Redis** (`REDIS_URL=redis://localhost:6379/0`) as message broker for background Celery workers (`ingestion_pipeline/tasks.py`), preventing long-running scraping tasks from blocking web requests.
+- **Scheduled Automated Refresh**: Integrated with **Celery Beat** to periodically fetch web updates and re-index PDF documents on a recurring schedule without manual server re-indexing.
+- **Freshness Metadata**: Exposes the `/status/` endpoint returning `last_updated` timestamp and source counts directly to the UI badge.
+
+### 4.3. Session Memory Layer (`rag/memory.py`)
+- **Session Identification**: Unique `session_id` tracks user sessions across browser reloads.
+- **Persistent Storage**: Stores conversation history in local SQLite/JSON store (`memory_store/`), preserving conversation history across server reboots.
+- **Rolling Context Summarization**: Automatically condenses multi-turn conversations into a compact `conversation_summary`, maintaining key entities (e.g. student GPA, target department, university choices) while preventing context window bloat.
+
+### 4.4. Context Engineering & Prompt Synthesis (`rag/retriever.py` & `api/views.py`)
+- **Smart Intent Classification**: Fast-path regex handles greetings instantly (< 5ms). Keyword matching routes factual questions directly to RAG retrieval without extra classification network calls.
+- **Pronoun Resolution & Multi-Query Expansion**: Contextual follow-up queries containing pronouns (*"What are its fees?"*) resolve target entities (*"What are UIU's tuition fees?"*) using conversation memory.
+- **Hybrid Retrieval Merge**: Merges dense vector similarity matches from ChromaDB with sparse keyword matches from Okapi BM25, ranking deduplicated chunks by highest relevance.
+- **Prompt Engineering Guardrails**: Synthesizes retrieved context and conversation memory into a structured prompt with strict ground-truth rules, ensuring answers are formatted in clean Markdown with bolded key facts.
 
 ---
 
