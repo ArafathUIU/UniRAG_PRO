@@ -33,10 +33,11 @@ def generate_query_variations(
     Generates alternative queries/perspectives based on the user's input query and past context.
     Falls back gracefully to returning just [query] if LLM is unavailable or fails.
     """
-    queries = [query]
-    api_key = getattr(settings, "GEMINI_API_KEY", None) or getattr(settings, "GROQ_API_KEY", None)
-    if not api_key:
-        return queries
+    # Optimization: Bypass extra LLM expansion call for standalone direct queries without prior conversation context
+    if not conversation_summary and not chat_history:
+        words = query.lower().split()
+        if len(words) >= 3 and not any(p in words for p in ["it", "its", "they", "them", "their", "this", "that"]):
+            return queries
 
     context_prompt = ""
     if conversation_summary:

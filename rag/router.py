@@ -143,6 +143,14 @@ def _fast_reply(query: str) -> Optional[str]:
     return None
 
 
+_KNOWLEDGE_KEYWORDS = re.compile(
+    r"\b(university|admission|fee|fees|gpa|requirement|requirements|program|programs|scholarship|"
+    r"cost|tuition|location|address|where|what|how|can\s+you|tell\s+me|about|buet|du|nsu|uiu|bracu|"
+    r"brac|bup|sust|ju|diu|aiub|buft|iiustb|ece|cse|eee|mba|bba|msc|bsc|dept|department)\b|\?",
+    re.IGNORECASE,
+)
+
+
 def classify_intent(state: ChatState) -> ChatState:
     session_id = state.get("session_id", "default")
 
@@ -153,7 +161,7 @@ def classify_intent(state: ChatState) -> ChatState:
         state["intent"] = "KNOWLEDGE"
         return state
 
-    # Fast-path: instant canned reply for greetings/thanks/farewells (no LLM).
+    # Fast-path 1: instant canned reply for greetings/thanks/farewells (0 LLM calls).
     fast = _fast_reply(state["query"])
     if fast is not None:
         state["intent"] = "GREETING"
@@ -165,6 +173,11 @@ def classify_intent(state: ChatState) -> ChatState:
     history = format_history_text(session_id)
     state["conversation_summary"] = summary
     state["chat_history"] = history
+
+    # Fast-path 2: Heuristic keyword/question matching (0 LLM classification calls).
+    if _KNOWLEDGE_KEYWORDS.search(state["query"]) or len(state["query"].split()) >= 3:
+        state["intent"] = "KNOWLEDGE"
+        return state
 
     context_hint = ""
     if summary or history:
@@ -180,8 +193,12 @@ def classify_intent(state: ChatState) -> ChatState:
         f"Message: {state['query']}\n"
         "Respond with exactly one word: CHITCHAT or KNOWLEDGE."
     )
-    result = invoke_llm_with_fallback(prompt, temperature=0.2).strip().upper()
-    state["intent"] = "KNOWLEDGE" if "KNOWLEDGE" in result else "CHITCHAT"
+    try:
+        result = invoke_llm_with_fallback(prompt, temperature=0.2).strip().upper()
+        state["intent"] = "KNOWLEDGE" if "KNOWLEDGE" in result else "CHITCHAT"
+    except Exception as e:
+        logger.warning(f"Intent classification LLM call failed ({e}), defaulting to KNOWLEDGE.")
+        state["intent"] = "KNOWLEDGE"
     return state
 
 
