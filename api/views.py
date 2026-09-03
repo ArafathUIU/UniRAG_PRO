@@ -76,9 +76,124 @@ def chat(request):
     except Exception as e:
         return Response({"error": f"LLM execution error: {str(e)}"}, status=500)
 
+@api_view(["POST"])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def chat_stream(request):
+    import json
+    import logging
+    from django.http import StreamingHttpResponse
+    from django.conf import settings
+    from rag.router import _fast_reply, _extract_text_content
+    from rag.retriever import retrieve_context
+    from rag.memory import get_conversation_summary, format_history_text, add_turn
+
+    logger = logging.getLogger(__name__)
+
+    query = request.data.get("message", "").strip()
+    session_id = request.data.get("session_id", "default").strip() or "default"
+
+    files = request.FILES.getlist("files")
+    if not files:
+        single = request.FILES.get("file")
+        if single:
+            files = [single]
+
+    file_name = None
+    file_text = None
+    if files:
+        file_name, file_text = extract_text_from_files(files)
+
+    if not query and not file_text:
+        return Response({"error": "message or file is required"}, status=400)
+
+    if not query and file_text:
+        query = f"Please summarize key information from {file_name}"
+
+    def event_generator():
+        fast = _fast_reply(query)
+        if fast is not None:
+            add_turn(session_id, query, fast)
+            yield f"data: {json.dumps({'content': fast, 'intent': 'GREETING', 'done': True})}\n\n"
+            return
+
+        summary = get_conversation_summary(session_id)
+        history = format_history_text(session_id)
+
+        context = ""
+        if not file_text:
+            context = retrieve_context(query=query, conversation_summary=summary, chat_history=history)
+            if not context:
+                ans = "No information was found."
+                add_turn(session_id, query, ans)
+                yield f"data: {json.dumps({'content': ans, 'intent': 'KNOWLEDGE', 'done': True})}\n\n"
+                return
+
+        prompt = (
+            "You are an expert university knowledge assistant for Bangladeshi universities.\n"
+            "Using the retrieved context below and prior conversation summary, answer the user's question accurately.\n\n"
+            "CRITICAL RULES:\n"
+            "1. Give direct, clear, structured, and informative answers with clear headings and bullet points.\n"
+            "2. Bold key facts, locations, requirements, dates, and numbers.\n\n"
+        )
+        if summary or history:
+            prompt += f"Prior Context:\n{summary}\n{history}\n\n"
+        if context:
+            prompt += f"Context:\n{context}\n\n"
+        if file_text:
+            prompt += f"Attached File Content ({file_name}):\n{file_text[:8000]}\n\n"
+        prompt += f"User Question: {query}\n\nAnswer:"
+
+        gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+        groq_key = getattr(settings, "GROQ_API_KEY", None)
+
+        full_answer = ""
+        intent = "ATTACHED_FILE" if file_text else "KNOWLEDGE"
+        yield f"data: {json.dumps({'intent': intent, 'done': False})}\n\n"
+
+        stream_success = False
+
+        if gemini_key:
+            try:
+                from langchain_google_genai import ChatGoogleGenerativeAI
+                llm = ChatGoogleGenerativeAI(model=getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash"), google_api_key=gemini_key, temperature=0.3, streaming=True)
+                for chunk in llm.stream(prompt):
+                    text = _extract_text_content(chunk.content)
+                    if text:
+                        full_answer += text
+                        yield f"data: {json.dumps({'content': text, 'done': False})}\n\n"
+                stream_success = True
+            except Exception as e:
+                logger.warning(f"Gemini streaming failed: {e}. Attempting Groq fallback...")
+
+        if not stream_success and groq_key:
+            try:
+                from langchain_groq import ChatGroq
+                llm = ChatGroq(model=getattr(settings, "GROQ_MODEL", "openai/gpt-oss-20b"), api_key=groq_key, temperature=0.3, streaming=True)
+                for chunk in llm.stream(prompt):
+                    text = _extract_text_content(chunk.content)
+                    if text:
+                        full_answer += text
+                        yield f"data: {json.dumps({'content': text, 'done': False})}\n\n"
+                stream_success = True
+            except Exception as e:
+                logger.warning(f"Groq streaming failed: {e}")
+
+        if not stream_success and not full_answer:
+            full_answer = "⚠️ LLM Streaming unavailable. Please check your API quota or keys."
+            yield f"data: {json.dumps({'content': full_answer, 'done': False})}\n\n"
+
+        add_turn(session_id, query, full_answer)
+        yield f"data: {json.dumps({'done': True})}\n\n"
+
+    response = StreamingHttpResponse(event_generator(), content_type="text/event-stream")
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
 @extend_schema(
     responses={200: StatusResponseSerializer},
     summary="Knowledge base status",
+    description="Returns the last ingestion timestamp and the number of indexed sources.",
 )
 @api_view(["GET"])
 def status(request):

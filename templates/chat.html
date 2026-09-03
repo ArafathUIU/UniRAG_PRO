@@ -745,29 +745,72 @@ form.addEventListener("submit", async (e) => {
   setGenerating(true);
   const typingCard = addTypingCard();
 
+  let botCard = null;
+  let accumulatedText = "";
+  let tag = "from the shelves";
+
   try {
-    const res = await fetch("/chat/", {
+    const res = await fetch("/chat/stream/", {
       method: "POST",
       body: formData,
       signal: currentController.signal,
     });
-    const data = await res.json();
-    typingCard.remove();
-    if (data.error) {
-      addCard("Error: " + data.error, "bot");
-    } else {
-      let tag = "chitchat";
-      if (data.intent === "ATTACHED_FILE") {
-        tag = "from attached file";
-      } else if (data.intent === "KNOWLEDGE") {
-        tag = "from the shelves";
-      }
-      addCard(data.answer, "bot", tag);
+
+    if (!res.ok) {
+      typingCard.remove();
+      addCard("Request failed with status " + res.status, "bot");
+      return;
     }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        const jsonStr = line.replace(/^data:\s*/, "").trim();
+        if (!jsonStr) continue;
+        try {
+          const payload = JSON.parse(jsonStr);
+          if (payload.intent) {
+            if (payload.intent === "GREETING") tag = "chitchat";
+            else if (payload.intent === "ATTACHED_FILE") tag = "from attached file";
+            else tag = "from the shelves";
+          }
+          if (payload.content) {
+            if (typingCard.parentNode) typingCard.remove();
+            accumulatedText += payload.content;
+            if (!botCard) {
+              botCard = addCard(accumulatedText, "bot", tag);
+            } else {
+              const contentDiv = botCard.querySelector(".card-content");
+              if (contentDiv) {
+                contentDiv.innerHTML = typeof marked !== "undefined" ? marked.parse(accumulatedText) : accumulatedText;
+              }
+            }
+            log.scrollTop = log.scrollHeight;
+          }
+          if (payload.error) {
+            if (typingCard.parentNode) typingCard.remove();
+            addCard("Error: " + payload.error, "bot");
+          }
+        } catch (parseErr) {
+          console.warn("SSE JSON parse error:", parseErr);
+        }
+      }
+    }
+    if (typingCard.parentNode) typingCard.remove();
   } catch (err) {
-    typingCard.remove();
+    if (typingCard.parentNode) typingCard.remove();
     if (err.name === "AbortError") {
-      addCard("_⏹ Generation stopped._", "bot");
+      if (!botCard) addCard("_⏹ Generation stopped._", "bot");
     } else {
       addCard("Request failed: " + err.message, "bot");
     }
