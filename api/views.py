@@ -155,7 +155,13 @@ def chat_stream(request):
         if gemini_key:
             try:
                 from langchain_google_genai import ChatGoogleGenerativeAI
-                llm = ChatGoogleGenerativeAI(model=getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash"), google_api_key=gemini_key, temperature=0.3, streaming=True)
+                llm = ChatGoogleGenerativeAI(
+                    model=getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash"),
+                    google_api_key=gemini_key,
+                    temperature=0.3,
+                    max_retries=0,
+                    streaming=True
+                )
                 for chunk in llm.stream(prompt):
                     text = _extract_text_content(chunk.content)
                     if text:

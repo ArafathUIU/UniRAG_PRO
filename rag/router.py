@@ -63,7 +63,7 @@ def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
                 continue
             tried.add(model)
             try:
-                llm = ChatGoogleGenerativeAI(model=model, google_api_key=gemini_key, temperature=temperature)
+                llm = ChatGoogleGenerativeAI(model=model, google_api_key=gemini_key, temperature=temperature, max_retries=0)
                 res = llm.invoke(prompt)
                 return _extract_text_content(res.content)
             except Exception as e:
