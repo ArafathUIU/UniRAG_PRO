@@ -1,3 +1,9 @@
+import os
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+django.setup()
+
 import unittest
 from rag.bm25 import BM25Okapi
 from rag.router import _fast_reply
