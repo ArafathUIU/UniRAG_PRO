@@ -15,11 +15,9 @@ from rag.memory import (
 logger = logging.getLogger(__name__)
 
 GEMINI_FALLBACK_MODELS = [
-    getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash"),
+    getattr(settings, "GEMINI_MODEL", "gemini-3.6-flash"),
+    "gemini-3.6-flash",
     "gemini-2.5-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro",
-    "gemini-2.0-flash",
 ]
 
 GROQ_FALLBACK_MODELS = [
