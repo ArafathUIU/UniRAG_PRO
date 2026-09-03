@@ -189,11 +189,12 @@ def _optimize_image_bytes(file_bytes: bytes, ext: str, max_dim: int = 1024) -> t
 
 
 def _extract_from_image(file_bytes: bytes, ext: str, file_name: str = "image.jpg") -> str:
-    api_key = getattr(settings, "GROQ_API_KEY", None)
-    if not api_key:
+    gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+    groq_key = getattr(settings, "GROQ_API_KEY", None)
+
+    if not gemini_key and not groq_key:
         return f"[Attached Image: {file_name}]"
 
-    # Optimize and compress image bytes to avoid Groq payload size limit errors
     opt_bytes, mime_type = _optimize_image_bytes(file_bytes, ext)
     b64_img = base64.b64encode(opt_bytes).decode("utf-8")
     data_url = f"data:{mime_type};base64,{b64_img}"
@@ -205,31 +206,44 @@ def _extract_from_image(file_bytes: bytes, ext: str, file_name: str = "image.jpg
         "Provide a rich, structured description and exact text transcription."
     )
 
-    for model_name in VISION_MODELS:
+    # Option 1: Try Gemini Vision if key available
+    if gemini_key:
         try:
-            llm = ChatGroq(model=model_name, api_key=api_key, temperature=0.1)
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=gemini_key, temperature=0.1)
             message = HumanMessage(
                 content=[
-                    {
-                        "type": "text",
-                        "text": vision_prompt,
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": data_url},
-                    },
+                    {"type": "text", "text": vision_prompt},
+                    {"type": "image_url", "image_url": {"url": data_url}},
                 ]
             )
             res = llm.invoke([message])
-            content = res.content if res and isinstance(res.content, str) else ""
-            # qwen3.6 is a reasoning model — drop its <think> block, keep the answer
-            content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+            content = str(res.content).strip()
             if len(content) > 10:
-                logger.info(f"Successfully analyzed image '{file_name}' with vision model '{model_name}'.")
+                logger.info(f"Successfully analyzed image '{file_name}' with Gemini Vision.")
                 return content
         except Exception as e:
-            logger.warning(f"Groq vision model '{model_name}' failed for '{file_name}': {e}. Trying next...")
+            logger.warning(f"Gemini vision analysis failed for '{file_name}': {e}. Trying fallback...")
 
-    # Fallback description if Groq vision model endpoint fails or is rate-limited
+    # Option 2: Try Groq Vision if key available
+    if groq_key:
+        for model_name in VISION_MODELS:
+            try:
+                llm = ChatGroq(model=model_name, api_key=groq_key, temperature=0.1)
+                message = HumanMessage(
+                    content=[
+                        {"type": "text", "text": vision_prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ]
+                )
+                res = llm.invoke([message])
+                content = res.content if res and isinstance(res.content, str) else ""
+                content = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+                if len(content) > 10:
+                    logger.info(f"Successfully analyzed image '{file_name}' with Groq vision model '{model_name}'.")
+                    return content
+            except Exception as e:
+                logger.warning(f"Groq vision model '{model_name}' failed for '{file_name}': {e}.")
+
     clean_name = file_name.replace("_", " ").replace("-", " ")
     return f"[Attached Image: {file_name}. Topic inferred from filename: '{clean_name}']"

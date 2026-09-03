@@ -14,39 +14,66 @@ from rag.memory import (
 
 logger = logging.getLogger(__name__)
 
-FALLBACK_MODELS = [
-    getattr(settings, "GROQ_MODEL", "llama-3.3-70b-versatile"),
+GEMINI_FALLBACK_MODELS = [
+    getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash"),
+    "gemini-2.5-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-2.0-flash",
+]
+
+GROQ_FALLBACK_MODELS = [
+    getattr(settings, "GROQ_MODEL", "openai/gpt-oss-20b"),
+    "openai/gpt-oss-20b",
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
-    "openai/gpt-oss-20b",
 ]
 
 
 def invoke_llm_with_fallback(prompt: str, temperature: float = 0.3) -> str:
     """
-    Invokes Groq LLM with fallback models if primary model hits rate limits or errors.
+    Invokes Google Gemini LLM (or Groq fallback) with fallback models if primary hits rate limits or errors.
     """
-    api_key = getattr(settings, "GROQ_API_KEY", None)
-    if not api_key:
-        raise ValueError("GROQ_API_KEY is not configured.")
+    gemini_key = getattr(settings, "GEMINI_API_KEY", None)
+    groq_key = getattr(settings, "GROQ_API_KEY", None)
+
+    if not gemini_key and not groq_key:
+        raise ValueError("Neither GEMINI_API_KEY nor GROQ_API_KEY is configured.")
 
     last_error = None
-    tried_models = set()
 
-    for model in FALLBACK_MODELS:
-        if model in tried_models:
-            continue
-        tried_models.add(model)
+    # Priority 1: Try Google Gemini models if key available
+    if gemini_key:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        tried = set()
+        for model in GEMINI_FALLBACK_MODELS:
+            if model in tried:
+                continue
+            tried.add(model)
+            try:
+                llm = ChatGoogleGenerativeAI(model=model, google_api_key=gemini_key, temperature=temperature)
+                res = llm.invoke(prompt)
+                return str(res.content)
+            except Exception as e:
+                logger.warning(f"Gemini invocation failed for model '{model}': {e}. Trying next fallback...")
+                last_error = e
 
-        try:
-            llm = ChatGroq(model=model, api_key=api_key, temperature=temperature)
-            res = llm.invoke(prompt)
-            return res.content
-        except Exception as e:
-            logger.warning(f"Groq invocation failed for model '{model}': {e}. Trying next fallback...")
-            last_error = e
+    # Priority 2: Fall back to Groq models if key available
+    if groq_key:
+        tried = set()
+        for model in GROQ_FALLBACK_MODELS:
+            if model in tried:
+                continue
+            tried.add(model)
+            try:
+                llm = ChatGroq(model=model, api_key=groq_key, temperature=temperature)
+                res = llm.invoke(prompt)
+                return str(res.content)
+            except Exception as e:
+                logger.warning(f"Groq invocation failed for model '{model}': {e}. Trying next fallback...")
+                last_error = e
 
-    raise RuntimeError(f"All Groq models failed. Last error: {last_error}")
+    raise RuntimeError(f"All LLM invocations failed. Last error: {last_error}")
 
 
 class ChatState(TypedDict):

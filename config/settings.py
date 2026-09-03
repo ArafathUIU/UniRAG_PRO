@@ -75,6 +75,11 @@ PDF_SOURCE_DIR = os.getenv("PDF_SOURCE_DIR", "./knowledge_base/pdfs")
 ADMIN_UPLOAD_DIR = os.getenv("ADMIN_UPLOAD_DIR", os.path.join(BASE_DIR, "knowledge_base", "admin_uploads"))
 CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR", os.path.join(BASE_DIR, "chroma_store"))
 
+# --- Chat LLM (Google Gemini & Groq Fallback) ---
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini" if GEMINI_API_KEY else "groq")
+
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "unirag-admin")
