@@ -23,8 +23,8 @@ GEMINI_FALLBACK_MODELS = [
 GROQ_FALLBACK_MODELS = [
     getattr(settings, "GROQ_MODEL", "openai/gpt-oss-20b"),
     "openai/gpt-oss-20b",
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.6-27b",
 ]
 
 
